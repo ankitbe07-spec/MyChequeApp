@@ -30,8 +30,8 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# ચેકનો ફોટો લોડ કરો (નામ સરખું રાખજો)
-cheque_image_file = 'image_0.png' # જો ફોટાનું નામ HDFC Bank Cheque 001.jpg હોય તો અહી બદલી દેજો
+# ચેકનો ફોટો લોડ કરો
+cheque_image_file = 'image_0.png' 
 try:
     cheque_bg_base64 = get_base64_of_bin_file(cheque_image_file)
 except FileNotFoundError:
@@ -48,7 +48,8 @@ c.execute('''CREATE TABLE IF NOT EXISTS bank_profiles
 new_columns = [
     ("f_family", "TEXT", "'Arial'"), ("f_size_d", "INTEGER", "16"), 
     ("f_size_p", "INTEGER", "18"), ("f_size_an", "INTEGER", "16"), ("f_size_aw", "INTEGER", "14"),
-    ("ac_x", "INTEGER", "10"), ("ac_y", "INTEGER", "210")
+    ("ac_x", "INTEGER", "10"), ("ac_y", "INTEGER", "210"),
+    ("aw_w", "INTEGER", "350"), ("f_size_ac", "INTEGER", "14")
 ]
 for col_name, col_type, default_val in new_columns:
     try:
@@ -69,28 +70,28 @@ st.sidebar.header("🏦 Bank Profile Settings")
 profiles = [row[0] for row in c.execute('SELECT name FROM bank_profiles').fetchall()]
 selected_profile = st.sidebar.selectbox("Bank Profile Select Karo", ["Navi Profile Banavo"] + profiles)
 
+# Default Values
 p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient = ("", 450, 210, 70, 170, 480, 135, 70, 140, "Landscape")
-f_fam, fs_d, fs_p, fs_an, fs_aw = ("Arial", 16, 18, 16, 14)
-ac_x, ac_y = (10, 210)
+f_fam, fs_d, fs_p, fs_an, fs_aw, ac_x, ac_y, aw_w, fs_ac = ("Arial", 16, 18, 16, 14, 10, 210, 350, 14)
 
 if selected_profile == "Navi Profile Banavo":
     new_profile_name = st.sidebar.text_input("Bank nu Naam (e.g. HDFC_Current)")
     if st.sidebar.button("Profile Create Karo"):
         if new_profile_name:
             c.execute('''INSERT OR IGNORE INTO bank_profiles 
-                         (name, date_x, date_y, payee_x, payee_y, amt_num_x, amt_num_y, amt_word_x, amt_word_y, orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                      (new_profile_name, 450, 210, 70, 170, 480, 135, 70, 140, "Landscape", "Arial", 16, 18, 16, 14, 10, 210))
+                         (name, date_x, date_y, payee_x, payee_y, amt_num_x, amt_num_y, amt_word_x, amt_word_y, orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y, aw_w, f_size_ac) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                      (new_profile_name, 450, 210, 70, 170, 480, 135, 70, 140, "Landscape", "Arial", 16, 18, 16, 14, 10, 210, 350, 14))
             conn.commit()
             st.success(f"{new_profile_name} Profile Bani Gai! Have Dropdown mathi select karo.")
             st.rerun()
 else:
     data = c.execute('''SELECT name, date_x, date_y, payee_x, payee_y, 
                                amt_num_x, amt_num_y, amt_word_x, amt_word_y, 
-                               orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y 
+                               orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y, aw_w, f_size_ac 
                         FROM bank_profiles WHERE name=?''', (selected_profile,)).fetchone()
     if data:
-        p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient, f_fam, fs_d, fs_p, fs_an, fs_aw, ac_x, ac_y = data
+        p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient, f_fam, fs_d, fs_p, fs_an, fs_aw, ac_x, ac_y, aw_w, fs_ac = data
 
 # --- MAIN UI: DATA ENTRY ---
 col1, col2 = st.columns([1, 1.2])
@@ -122,25 +123,30 @@ with col2:
         font_options = ["Arial", "Verdana", "Times New Roman", "Courier New", "Georgia", "Tahoma"]
         new_f_fam = st.selectbox("Font Type", font_options, index=font_options.index(f_fam) if f_fam in font_options else 0)
         
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3 = st.columns(3)
         new_fs_d = c1.number_input("Date Size", min_value=8, max_value=40, value=fs_d)
         new_fs_p = c2.number_input("Payee Size", min_value=8, max_value=40, value=fs_p)
         new_fs_an = c3.number_input("Num Size", min_value=8, max_value=40, value=fs_an)
+        
+        c4, c5, c6 = st.columns(3)
         new_fs_aw = c4.number_input("Word Size", min_value=8, max_value=40, value=fs_aw)
+        new_fs_ac = c5.number_input("A/C Payee Size", min_value=8, max_value=40, value=fs_ac)
+        
     
-    c5, c6 = st.columns(2)
-    with c5:
-        new_d_x = st.slider("Date X", 0, 600, int(d_x))
-        new_p_x = st.slider("Payee Name X", 0, 600, int(p_x))
-        new_an_x = st.slider("Amount Number X", 0, 600, int(an_x))
-        new_aw_x = st.slider("Amount Word X", 0, 600, int(aw_x))
-        new_ac_x = st.slider("A/C Payee X", 0, 600, int(ac_x))
-    with c6:
-        new_d_y = st.slider("Date Y", 0, 250, int(d_y))
-        new_p_y = st.slider("Payee Name Y", 0, 250, int(p_y))
-        new_an_y = st.slider("Amount Number Y", 0, 250, int(an_y))
-        new_aw_y = st.slider("Amount Word Y", 0, 250, int(aw_y))
-        new_ac_y = st.slider("A/C Payee Y", 0, 250, int(ac_y))
+    c7, c8 = st.columns(2)
+    with c7:
+        new_d_x = st.slider("Date X", 0, 800, int(d_x))
+        new_p_x = st.slider("Payee Name X", 0, 800, int(p_x))
+        new_an_x = st.slider("Amount Number X", 0, 800, int(an_x))
+        new_aw_x = st.slider("Amount Word X", 0, 800, int(aw_x))
+        new_ac_x = st.slider("A/C Payee X", 0, 800, int(ac_x))
+    with c8:
+        new_d_y = st.slider("Date Y", 0, 400, int(d_y))
+        new_p_y = st.slider("Payee Name Y", 0, 400, int(p_y))
+        new_an_y = st.slider("Amount Number Y", 0, 400, int(an_y))
+        new_aw_y = st.slider("Amount Word Y", 0, 400, int(aw_y))
+        new_ac_y = st.slider("A/C Payee Y", 0, 400, int(ac_y))
+        new_aw_w = st.slider("Word Box Width (Prevent 2 lines)", 100, 800, int(aw_w))
         
     new_orient = st.radio("Orientation", ["Landscape", "Portrait"], index=0 if orient=="Landscape" else 1, horizontal=True)
 
@@ -149,10 +155,10 @@ with col2:
             c.execute('''UPDATE bank_profiles 
                          SET date_x=?, date_y=?, payee_x=?, payee_y=?, 
                              amt_num_x=?, amt_num_y=?, amt_word_x=?, amt_word_y=?, orientation=?,
-                             f_family=?, f_size_d=?, f_size_p=?, f_size_an=?, f_size_aw=?, ac_x=?, ac_y=?
+                             f_family=?, f_size_d=?, f_size_p=?, f_size_an=?, f_size_aw=?, ac_x=?, ac_y=?, aw_w=?, f_size_ac=?
                          WHERE name=?''', 
                       (new_d_x, new_d_y, new_p_x, new_p_y, new_an_x, new_an_y, new_aw_x, new_aw_y, new_orient, 
-                       new_f_fam, new_fs_d, new_fs_p, new_fs_an, new_fs_aw, new_ac_x, new_ac_y, selected_profile))
+                       new_f_fam, new_fs_d, new_fs_p, new_fs_an, new_fs_aw, new_ac_x, new_ac_y, new_aw_w, new_fs_ac, selected_profile))
             conn.commit()
             st.toast("Settings Saved! ✅")
 
@@ -160,22 +166,21 @@ with col2:
 st.divider()
 st.subheader("👀 Print Preview (Real-time & Draggable)")
 
-preview_w, preview_h = (600, 250) if new_orient == "Landscape" else (250, 600)
+preview_w, preview_h = (800, 300) if new_orient == "Landscape" else (300, 800)
 
 if cheque_bg_base64:
     bg_style = f"background-image: url(data:image/png;base64,{cheque_bg_base64}); background-size: 100% 100%; background-repeat: no-repeat;"
 else:
     bg_style = "background-color: white;"
 
-# સેમ્પલ ટેક્સ્ટ લોજિક (જો બોક્સ ખાલી હોય તો Sample દેખાશે)
+# 💡 અહીથી "₹" સિમ્બોલ કાઢી નાખ્યો છે
 display_payee = final_payee.upper() if final_payee else "SAMPLE PAYEE NAME"
-display_amt_num = f"<b>₹ {int(amt_num)}/-</b>" if amt_num > 0 else "<b style='color:gray;'>₹ 10000/- (Sample)</b>"
+display_amt_num = f"<b>{int(amt_num):,}/-</b>" if amt_num > 0 else "<b style='color:gray;'>10,000/- (Sample)</b>"
 display_amt_word = amt_word.upper() if amt_word else "<span style='color:gray;'>TEN THOUSAND ONLY (SAMPLE)</span>"
 
-# HTML & CSS For Print & Preview
+# HTML & CSS
 html_code = f"""
 <style>
-/* પ્રિન્ટિંગ વખતે 93x203mm સાઈઝ અને બેકગ્રાઉન્ડ ઇમેજ છુપાવવા માટે */
 @page {{
     size: 203mm 93mm; 
     margin: 0mm; 
@@ -189,7 +194,7 @@ html_code = f"""
         left: 0;
         top: 0;
         border: none !important; 
-        background-image: none !important; /* અહી ફોટો પ્રિન્ટ થતો બંધ થશે */
+        background-image: none !important; 
         margin: 0;
         padding: 0;
         width: 100% !important;
@@ -209,15 +214,15 @@ html_code = f"""
         Dragging...
     </div>
 
-    <div id="drag_date" style="position: absolute; left: {new_d_x}px; top: {250 - new_d_y if new_orient=='Landscape' else 600 - new_d_y}px; color: blue; font-family: 'Courier New', monospace; font-weight: bold; font-size: {new_fs_d}px; cursor: grab; user-select: none;">{chq_date.strftime('%d %m %Y')}</div>
+    <div id="drag_date" style="position: absolute; left: {new_d_x}px; top: {preview_h - new_d_y}px; color: blue; font-family: 'Courier New', monospace; font-weight: bold; font-size: {new_fs_d}px; cursor: grab; user-select: none;">{chq_date.strftime('%d %m %Y')}</div>
     
-    <div id="drag_payee" style="position: absolute; left: {new_p_x}px; top: {250 - new_p_y if new_orient=='Landscape' else 600 - new_p_y}px; color: black; font-size: {new_fs_p}px; font-weight: bold; cursor: grab; user-select: none; white-space: nowrap;">{display_payee}</div>
+    <div id="drag_payee" style="position: absolute; left: {new_p_x}px; top: {preview_h - new_p_y}px; color: black; font-size: {new_fs_p}px; font-weight: bold; cursor: grab; user-select: none; white-space: nowrap;">{display_payee}</div>
     
-    <div id="drag_amt_num" style="position: absolute; left: {new_an_x}px; top: {250 - new_an_y if new_orient=='Landscape' else 600 - new_an_y}px; color: black; font-size: {new_fs_an}px; cursor: grab; user-select: none; white-space: nowrap;">{display_amt_num}</div>
+    <div id="drag_amt_num" style="position: absolute; left: {new_an_x}px; top: {preview_h - new_an_y}px; color: black; font-size: {new_fs_an}px; cursor: grab; user-select: none; white-space: nowrap;">{display_amt_num}</div>
     
-    <div id="drag_amt_word" style="position: absolute; left: {new_aw_x}px; top: {250 - new_aw_y if new_orient=='Landscape' else 600 - new_aw_y}px; color: black; font-size: {new_fs_aw}px; max-width: 350px; line-height: 1.2; cursor: grab; user-select: none;">{display_amt_word}</div>
+    <div id="drag_amt_word" style="position: absolute; left: {new_aw_x}px; top: {preview_h - new_aw_y}px; color: black; font-size: {new_fs_aw}px; width: {new_aw_w}px; line-height: 1.2; cursor: grab; user-select: none;">{display_amt_word}</div>
     
-    <div id="drag_ac" style="position: absolute; left: {new_ac_x}px; top: {250 - new_ac_y if new_orient=='Landscape' else 600 - new_ac_y}px; border-top: 2px solid black; border-bottom: 2px solid black; padding: 2px 5px; font-size: 14px; font-weight: bold; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg); cursor: grab; user-select: none; white-space: nowrap;">A/C PAYEE</div>
+    <div id="drag_ac" style="position: absolute; left: {new_ac_x}px; top: {preview_h - new_ac_y}px; border-top: 2px solid black; border-bottom: 2px solid black; padding: 2px 5px; font-size: {new_fs_ac}px; font-weight: bold; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg); cursor: grab; user-select: none; white-space: nowrap;">A/C PAYEE</div>
 </div>
 
 <script>
