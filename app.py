@@ -32,17 +32,16 @@ c.execute('''CREATE TABLE IF NOT EXISTS bank_profiles
              (name TEXT PRIMARY KEY, date_x REAL, date_y REAL, payee_x REAL, payee_y REAL, 
               amt_num_x REAL, amt_num_y REAL, amt_word_x REAL, amt_word_y REAL, orientation TEXT)''')
 
-# Juna database ma navi columns add karva mate (Error aave to ignore karshe)
 new_columns = [
     ("f_family", "TEXT", "'Arial'"), ("f_size_d", "INTEGER", "16"), 
     ("f_size_p", "INTEGER", "18"), ("f_size_an", "INTEGER", "16"), ("f_size_aw", "INTEGER", "14"),
-    ("ac_x", "INTEGER", "10"), ("ac_y", "INTEGER", "210") # A/C Payee Coordinates
+    ("ac_x", "INTEGER", "10"), ("ac_y", "INTEGER", "210")
 ]
 for col_name, col_type, default_val in new_columns:
     try:
         c.execute(f'ALTER TABLE bank_profiles ADD COLUMN {col_name} {col_type} DEFAULT {default_val}')
     except sqlite3.OperationalError:
-        pass # Column pehlathi j che
+        pass
 
 c.execute('CREATE TABLE IF NOT EXISTS parties (name TEXT PRIMARY KEY)')
 c.execute('CREATE TABLE IF NOT EXISTS history (date TEXT, party TEXT, amount REAL)')
@@ -74,7 +73,6 @@ if selected_profile == "Navi Profile Banavo":
             st.success(f"{new_profile_name} Profile Bani Gai! Have Dropdown mathi select karo.")
             st.rerun()
 else:
-    # Database mathi existing profile no data levu (Explicit columns to avoid tuple unpack error)
     data = c.execute('''SELECT name, date_x, date_y, payee_x, payee_y, 
                                amt_num_x, amt_num_y, amt_word_x, amt_word_y, 
                                orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y 
@@ -96,21 +94,20 @@ with col1:
     auto_word = number_to_words(amt_num) if amt_num > 0 else ""
     amt_word = st.text_input("Amount (In Words)", value=auto_word)
     chq_date = st.date_input("Date", datetime.now())
-    is_ac_payee = st.checkbox("A/c Payee (Cross Cheque)", value=True) # Default checked rakhel che
+    is_ac_payee = st.checkbox("A/c Payee (Cross Cheque)", value=True)
     
-    if st.button("🖨️ Save & Print"):
+    if st.button("💾 Save to History"):
         if final_payee and amt_num > 0:
             c.execute('INSERT OR IGNORE INTO parties VALUES (?)', (final_payee,))
             c.execute('INSERT INTO history VALUES (?, ?, ?)', (chq_date.strftime('%Y-%m-%d'), final_payee, amt_num))
             conn.commit()
-            st.success(f"Cheque for {final_payee} is ready to print!")
+            st.success(f"Record Saved! Niche Preview ma jaine 'Print' button dabavo.")
         else:
             st.warning("Maherbani kari ne Naam ane Amount lakho.")
 
 with col2:
     st.subheader("⚙️ Visual & Font Adjustment")
     
-    # --- FONT SETTINGS ---
     with st.expander("📝 Font Style & Size Settings"):
         font_options = ["Arial", "Verdana", "Times New Roman", "Courier New", "Georgia", "Tahoma"]
         new_f_fam = st.selectbox("Font Type", font_options, index=font_options.index(f_fam) if f_fam in font_options else 0)
@@ -121,7 +118,6 @@ with col2:
         new_fs_an = c3.number_input("Num Size", min_value=8, max_value=40, value=fs_an)
         new_fs_aw = c4.number_input("Word Size", min_value=8, max_value=40, value=fs_aw)
     
-    # --- MARGIN SETTINGS ---
     c5, c6 = st.columns(2)
     with c5:
         new_d_x = st.slider("Date X", 0, 600, int(d_x))
@@ -153,7 +149,6 @@ with col2:
 # --- VISUAL PREVIEW BOX ---
 st.divider()
 st.subheader("👀 Print Preview (Drag & Drop)")
-st.info("💡 **TIPS:** Tame preview ma A/C Payee sahit badhu j drag kari shaksho. Drag karya pachi upar khuna ma nava number aavse, ae number tame upar slider ma nakhine save kari sako cho.")
 
 preview_w, preview_h = (600, 250) if new_orient == "Landscape" else (250, 600)
 
@@ -161,9 +156,34 @@ display_payee = final_payee.upper() if final_payee else "SAMPLE PAYEE NAME"
 display_amt_num = f"<b>₹ {int(amt_num)}/-</b>" if amt_num > 0 else "<b style='color:gray;'>₹ 10000/- (Sample)</b>"
 display_amt_word = amt_word if amt_word else "<span style='color:gray;'>Ten Thousand Only (Sample)</span>"
 
-# HTML code ma Drag & Drop Javascript add karyo che (A/C Payee included)
+# HTML code ma Print CSS ane Print Button add karyu che
 html_code = f"""
-<div id="cheque_box" style="border: 2px dashed #bbb; width: {preview_w}px; height: {preview_h}px; position: relative; background-color: white; margin: auto; overflow: hidden; font-family: '{new_f_fam}', sans-serif;">
+<style>
+/* Jyare print aapiye tyare shu dekhavu joiye enu setting */
+@media print {{
+    body * {{
+        visibility: hidden; /* Badhu gayab kari do */
+    }}
+    #cheque_box, #cheque_box * {{
+        visibility: visible; /* Khali cheque na elements dekhase */
+    }}
+    #cheque_box {{
+        position: absolute;
+        left: 0;
+        top: 0;
+        border: none !important; /* Tuteli line print ma nahi aave */
+    }}
+    #coord_box, #print_button {{
+        display: none !important; /* Print vakhate tracker ane print button hide karo */
+    }}
+}}
+</style>
+
+<button id="print_button" onclick="window.print()" style="margin-bottom: 15px; padding: 10px 20px; font-size: 16px; font-weight: bold; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
+    🖨️ Print Cheque Now
+</button>
+
+<div id="cheque_box" style="border: 2px dashed #bbb; width: {preview_w}px; height: {preview_h}px; position: relative; background-color: white; overflow: hidden; font-family: '{new_f_fam}', sans-serif;">
     
     <div id="coord_box" style="position:absolute; top:5px; right:5px; background:#fff3cd; border:1px solid #ffeeba; padding:5px; font-size:12px; font-family:sans-serif; display:none; z-index:1000; color:#856404; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);">
         Dragging...
@@ -183,7 +203,7 @@ html_code = f"""
 <script>
 function makeDraggable(elementId, labelName) {{
     var elmnt = document.getElementById(elementId);
-    if (!elmnt) return; // Jo element hide hoy to error na aave
+    if (!elmnt) return; 
     
     var coordBox = document.getElementById("coord_box");
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
@@ -212,7 +232,6 @@ function makeDraggable(elementId, labelName) {{
         elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
         elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
         
-        // Calculate Streamlit coordinate logic (Bottom-Up Y Axis)
         var newX = elmnt.offsetLeft;
         var newY = containerHeight - elmnt.offsetTop;
         
@@ -231,9 +250,9 @@ makeDraggable("drag_date", "Date");
 makeDraggable("drag_payee", "Payee Name");
 makeDraggable("drag_amt_num", "Amount Number");
 makeDraggable("drag_amt_word", "Amount Word");
-makeDraggable("drag_ac", "A/C Payee"); // A/C Payee ne drag mate active karyu
+makeDraggable("drag_ac", "A/C Payee");
 </script>
 """
 
-# HTML UI Render karvu
-components.html(html_code, height=preview_h + 30)
+# HTML render
+components.html(html_code, height=preview_h + 80)
