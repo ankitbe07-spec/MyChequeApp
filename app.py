@@ -52,7 +52,6 @@ c.execute('''CREATE TABLE IF NOT EXISTS bank_profiles
              (name TEXT PRIMARY KEY, date_x REAL, date_y REAL, payee_x REAL, payee_y REAL, 
               amt_num_x REAL, amt_num_y REAL, amt_word_x REAL, amt_word_y REAL, orientation TEXT)''')
 
-# અહી is_bold નામની નવી કોલમ ઉમેરી છે
 new_columns = [
     ("f_family", "TEXT", "'Arial'"), ("f_size_d", "INTEGER", "16"), 
     ("f_size_p", "INTEGER", "18"), ("f_size_an", "INTEGER", "16"), ("f_size_aw", "INTEGER", "14"),
@@ -139,7 +138,6 @@ with col2:
         
         c01, c02 = st.columns(2)
         new_f_fam = c01.selectbox("Font Type", font_options, index=font_options.index(f_fam) if f_fam in font_options else 0)
-        # 💡 Bold કરવા કે નહિ તેનું ચેકબોક્સ અહી છે
         new_is_bold = c02.checkbox("Bold Text (ઘાટા અક્ષર)", value=bool(is_bold_val))
         
         c1, c2, c3, c4 = st.columns(4)
@@ -153,20 +151,22 @@ with col2:
         new_fs_ac = c6.number_input("A/C Payee Size", min_value=8, max_value=40, value=fs_ac)
         
     c7, c8 = st.columns(2)
+    
+    # 💡 અહી 767 અને 351 ના એક્ઝેક્ટ મેપિંગ નો ઉપયોગ કર્યો છે
     with c7:
-        new_d_x = st.slider("Date X", 0, 800, int(d_x))
-        new_p_x = st.slider("Payee Name X", 0, 800, int(p_x))
-        new_an_x = st.slider("Amount Number X", 0, 800, int(an_x))
-        new_aw_x = st.slider("Amount Word (Line 1) X", 0, 800, int(aw_x))
-        new_aw2_x = st.slider("Amount Word (Line 2) X", 0, 800, int(aw2_x))
-        new_ac_x = st.slider("A/C Payee X", 0, 800, int(ac_x))
+        new_d_x = st.slider("Date X", 0, 767, min(int(d_x), 767))
+        new_p_x = st.slider("Payee Name X", 0, 767, min(int(p_x), 767))
+        new_an_x = st.slider("Amount Number X", 0, 767, min(int(an_x), 767))
+        new_aw_x = st.slider("Amount Word (Line 1) X", 0, 767, min(int(aw_x), 767))
+        new_aw2_x = st.slider("Amount Word (Line 2) X", 0, 767, min(int(aw2_x), 767))
+        new_ac_x = st.slider("A/C Payee X", 0, 767, min(int(ac_x), 767))
     with c8:
-        new_d_y = st.slider("Date Y", 0, 400, int(d_y))
-        new_p_y = st.slider("Payee Name Y", 0, 400, int(p_y))
-        new_an_y = st.slider("Amount Number Y", 0, 400, int(an_y))
-        new_aw_y = st.slider("Amount Word (Line 1) Y", 0, 400, int(aw_y))
-        new_aw2_y = st.slider("Amount Word (Line 2) Y", 0, 400, int(aw2_y))
-        new_ac_y = st.slider("A/C Payee Y", 0, 400, int(ac_y))
+        new_d_y = st.slider("Date Y", 0, 351, min(int(d_y), 351))
+        new_p_y = st.slider("Payee Name Y", 0, 351, min(int(p_y), 351))
+        new_an_y = st.slider("Amount Number Y", 0, 351, min(int(an_y), 351))
+        new_aw_y = st.slider("Amount Word (Line 1) Y", 0, 351, min(int(aw_y), 351))
+        new_aw2_y = st.slider("Amount Word (Line 2) Y", 0, 351, min(int(aw2_y), 351))
+        new_ac_y = st.slider("A/C Payee Y", 0, 351, min(int(ac_y), 351))
         
     new_orient = st.radio("Orientation", ["Landscape", "Portrait"], index=0 if orient=="Landscape" else 1, horizontal=True)
 
@@ -184,16 +184,16 @@ with col2:
 
 # --- VISUAL PREVIEW BOX ---
 st.divider()
-st.subheader("👀 Print Preview (Real-time & Draggable)")
+st.subheader("👀 Print Preview (Exact Size 1:1)")
 
-preview_w, preview_h = (800, 300) if new_orient == "Landscape" else (300, 800)
+# 💡 ચેકની સાચી સાઇઝ પિક્સલમાં સેટ કરી છે જેથી 100% Scale પર બરાબર પ્રિન્ટ થાય 
+preview_w, preview_h = (767, 351) if new_orient == "Landscape" else (351, 767)
 
 if cheque_bg_base64:
     bg_style = f"background-image: url(data:image/png;base64,{cheque_bg_base64}); background-size: 100% 100%; background-repeat: no-repeat;"
 else:
     bg_style = "background-color: white;"
 
-# Bold સેટિંગ માટેનું લોજીક
 fw = "bold" if new_is_bold else "normal"
 
 display_payee = final_payee.upper() if final_payee else "SAMPLE PAYEE NAME"
@@ -203,11 +203,11 @@ display_aw2 = amt_word_2.upper() if amt_word_2 else ""
 
 date_str_format = chq_date.strftime('%d%m%Y')
 
-# 💡 HTML & CSS (આમાં બ્લેન્ક પેજનો પ્રોબ્લેમ સોલ્વ કર્યો છે)
+# HTML & CSS For Strict Print Dimensions
 html_code = f"""
 <style>
 @page {{
-    size: 203mm 93mm; 
+    size: 203mm 93mm landscape; 
     margin: 0mm; 
 }}
 
@@ -217,15 +217,23 @@ html, body {{
 }}
 
 @media print {{
-    /* આનાથી પ્રિન્ટ બટન અને ટ્રેકર છુપાઈ જશે, બાકી બધું દેખાશે */
+    body * {{ visibility: hidden; }}
+    
     #print_button, #coord_box {{ display: none !important; }}
+    
+    #cheque_box, #cheque_box * {{ 
+        visibility: visible; 
+        color: black !important; 
+    }}
     
     #cheque_box {{
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
+        width: 203mm !important;
+        height: 93mm !important;
         border: none !important; 
-        background-image: none !important; /* ફોટો પ્રિન્ટ નહિ થાય */
+        background-image: none !important; 
         background-color: transparent !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -243,7 +251,7 @@ html, body {{
         Dragging...
     </div>
 
-    <div id="drag_date" style="position: absolute; left: {new_d_x}px; top: {preview_h - new_d_y}px; color: black; font-family: 'Courier New', monospace; font-weight: {fw}; font-size: {new_fs_d}px; letter-spacing: {new_d_space}px; cursor: grab; user-select: none;">{date_str_format}</div>
+    <div id="drag_date" style="position: absolute; left: {new_d_x}px; top: {preview_h - new_d_y}px; color: blue; font-family: 'Courier New', monospace; font-weight: {fw}; font-size: {new_fs_d}px; letter-spacing: {new_d_space}px; cursor: grab; user-select: none;">{date_str_format}</div>
     
     <div id="drag_payee" style="position: absolute; left: {new_p_x}px; top: {preview_h - new_p_y}px; color: black; font-size: {new_fs_p}px; font-weight: {fw}; cursor: grab; user-select: none; white-space: nowrap;">{display_payee}</div>
     
