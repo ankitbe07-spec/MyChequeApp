@@ -24,7 +24,6 @@ def number_to_words(n):
         
     return get_words(int(n)).strip() + " Only"
 
-# લાંબા શબ્દોને 2 લાઈનમાં ઓટોમેટિક તોડવાનું ફંક્શન (લગભગ 40 અક્ષર પછી)
 def split_words_to_lines(text, limit=40):
     if len(text) <= limit: 
         return text, ""
@@ -39,7 +38,6 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-# ચેકનો ફોટો લોડ કરો
 cheque_image_file = 'image_0.png' 
 try:
     cheque_bg_base64 = get_base64_of_bin_file(cheque_image_file)
@@ -54,13 +52,14 @@ c.execute('''CREATE TABLE IF NOT EXISTS bank_profiles
              (name TEXT PRIMARY KEY, date_x REAL, date_y REAL, payee_x REAL, payee_y REAL, 
               amt_num_x REAL, amt_num_y REAL, amt_word_x REAL, amt_word_y REAL, orientation TEXT)''')
 
-# નવા કોલમ્સ એડ કર્યા (Line 2 ના X-Y અને Date Spacing માટે)
+# અહી is_bold નામની નવી કોલમ ઉમેરી છે
 new_columns = [
     ("f_family", "TEXT", "'Arial'"), ("f_size_d", "INTEGER", "16"), 
     ("f_size_p", "INTEGER", "18"), ("f_size_an", "INTEGER", "16"), ("f_size_aw", "INTEGER", "14"),
     ("ac_x", "INTEGER", "10"), ("ac_y", "INTEGER", "210"),
     ("aw_w", "INTEGER", "350"), ("f_size_ac", "INTEGER", "14"),
-    ("aw2_x", "INTEGER", "70"), ("aw2_y", "INTEGER", "110"), ("d_space", "INTEGER", "8")
+    ("aw2_x", "INTEGER", "70"), ("aw2_y", "INTEGER", "110"), ("d_space", "INTEGER", "8"),
+    ("is_bold", "INTEGER", "1")
 ]
 for col_name, col_type, default_val in new_columns:
     try:
@@ -83,26 +82,26 @@ selected_profile = st.sidebar.selectbox("Bank Profile Select Karo", ["Navi Profi
 
 # Default Values
 p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient = ("", 450, 210, 70, 170, 480, 135, 70, 140, "Landscape")
-f_fam, fs_d, fs_p, fs_an, fs_aw, ac_x, ac_y, aw_w, fs_ac, aw2_x, aw2_y, d_space = ("Arial", 16, 18, 16, 14, 10, 210, 350, 14, 70, 110, 8)
+f_fam, fs_d, fs_p, fs_an, fs_aw, ac_x, ac_y, aw_w, fs_ac, aw2_x, aw2_y, d_space, is_bold_val = ("Arial", 16, 18, 16, 14, 10, 210, 350, 14, 70, 110, 8, 1)
 
 if selected_profile == "Navi Profile Banavo":
     new_profile_name = st.sidebar.text_input("Bank nu Naam (e.g. HDFC_Current)")
     if st.sidebar.button("Profile Create Karo"):
         if new_profile_name:
             c.execute('''INSERT OR IGNORE INTO bank_profiles 
-                         (name, date_x, date_y, payee_x, payee_y, amt_num_x, amt_num_y, amt_word_x, amt_word_y, orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y, aw_w, f_size_ac, aw2_x, aw2_y, d_space) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                      (new_profile_name, 450, 210, 70, 170, 480, 135, 70, 140, "Landscape", "Arial", 16, 18, 16, 14, 10, 210, 350, 14, 70, 110, 8))
+                         (name, date_x, date_y, payee_x, payee_y, amt_num_x, amt_num_y, amt_word_x, amt_word_y, orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y, aw_w, f_size_ac, aw2_x, aw2_y, d_space, is_bold) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                      (new_profile_name, 450, 210, 70, 170, 480, 135, 70, 140, "Landscape", "Arial", 16, 18, 16, 14, 10, 210, 350, 14, 70, 110, 8, 1))
             conn.commit()
             st.success(f"{new_profile_name} Profile Bani Gai! Have Dropdown mathi select karo.")
             st.rerun()
 else:
     data = c.execute('''SELECT name, date_x, date_y, payee_x, payee_y, 
                                amt_num_x, amt_num_y, amt_word_x, amt_word_y, 
-                               orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y, aw_w, f_size_ac, aw2_x, aw2_y, d_space 
+                               orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y, aw_w, f_size_ac, aw2_x, aw2_y, d_space, is_bold 
                         FROM bank_profiles WHERE name=?''', (selected_profile,)).fetchone()
     if data:
-        p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient, f_fam, fs_d, fs_p, fs_an, fs_aw, ac_x, ac_y, aw_w, fs_ac, aw2_x, aw2_y, d_space = data
+        p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient, f_fam, fs_d, fs_p, fs_an, fs_aw, ac_x, ac_y, aw_w, fs_ac, aw2_x, aw2_y, d_space, is_bold_val = data
 
 # --- MAIN UI: DATA ENTRY ---
 col1, col2 = st.columns([1, 1.2])
@@ -116,7 +115,6 @@ with col1:
 
     amt_num = st.number_input("Amount (In Numbers)", min_value=0.0, step=1.0)
     
-    # રકમને 2 લાઈનમાં ઓટોમેટિક તોડો
     auto_word_full = number_to_words(amt_num) if amt_num > 0 else ""
     auto_w1, auto_w2 = split_words_to_lines(auto_word_full)
     
@@ -136,14 +134,17 @@ with col1:
 with col2:
     st.subheader("⚙️ Visual & Font Adjustment")
     
-    with st.expander("📝 Font Style, Size & Date Spacing"):
+    with st.expander("📝 Font Style, Size & Bold Settings"):
         font_options = ["Arial", "Verdana", "Times New Roman", "Courier New", "Georgia", "Tahoma"]
-        new_f_fam = st.selectbox("Font Type", font_options, index=font_options.index(f_fam) if f_fam in font_options else 0)
+        
+        c01, c02 = st.columns(2)
+        new_f_fam = c01.selectbox("Font Type", font_options, index=font_options.index(f_fam) if f_fam in font_options else 0)
+        # 💡 Bold કરવા કે નહિ તેનું ચેકબોક્સ અહી છે
+        new_is_bold = c02.checkbox("Bold Text (ઘાટા અક્ષર)", value=bool(is_bold_val))
         
         c1, c2, c3, c4 = st.columns(4)
         new_fs_d = c1.number_input("Date Size", min_value=8, max_value=40, value=fs_d)
-        # તારીખના અક્ષરો વચ્ચેની જગ્યા સેટ કરવાનું સ્લાઈડર
-        new_d_space = c2.number_input("Date Spacing", min_value=0, max_value=50, value=d_space, help="09042026 ના અક્ષરો વચ્ચે કેટલી જગ્યા રાખવી છે")
+        new_d_space = c2.number_input("Date Spacing", min_value=0, max_value=50, value=d_space)
         new_fs_p = c3.number_input("Payee Size", min_value=8, max_value=40, value=fs_p)
         new_fs_an = c4.number_input("Num Size", min_value=8, max_value=40, value=fs_an)
         
@@ -174,10 +175,10 @@ with col2:
             c.execute('''UPDATE bank_profiles 
                          SET date_x=?, date_y=?, payee_x=?, payee_y=?, 
                              amt_num_x=?, amt_num_y=?, amt_word_x=?, amt_word_y=?, orientation=?,
-                             f_family=?, f_size_d=?, f_size_p=?, f_size_an=?, f_size_aw=?, ac_x=?, ac_y=?, aw_w=?, f_size_ac=?, aw2_x=?, aw2_y=?, d_space=?
+                             f_family=?, f_size_d=?, f_size_p=?, f_size_an=?, f_size_aw=?, ac_x=?, ac_y=?, aw_w=?, f_size_ac=?, aw2_x=?, aw2_y=?, d_space=?, is_bold=?
                          WHERE name=?''', 
                       (new_d_x, new_d_y, new_p_x, new_p_y, new_an_x, new_an_y, new_aw_x, new_aw_y, new_orient, 
-                       new_f_fam, new_fs_d, new_fs_p, new_fs_an, new_fs_aw, new_ac_x, new_ac_y, aw_w, new_fs_ac, new_aw2_x, new_aw2_y, new_d_space, selected_profile))
+                       new_f_fam, new_fs_d, new_fs_p, new_fs_an, new_fs_aw, new_ac_x, new_ac_y, aw_w, new_fs_ac, new_aw2_x, new_aw2_y, new_d_space, int(new_is_bold), selected_profile))
             conn.commit()
             st.toast("Settings Saved! ✅")
 
@@ -192,15 +193,17 @@ if cheque_bg_base64:
 else:
     bg_style = "background-color: white;"
 
+# Bold સેટિંગ માટેનું લોજીક
+fw = "bold" if new_is_bold else "normal"
+
 display_payee = final_payee.upper() if final_payee else "SAMPLE PAYEE NAME"
-display_amt_num = f"<b>{int(amt_num):,}/-</b>" if amt_num > 0 else "<b style='color:gray;'>10,000/- (Sample)</b>"
-display_aw1 = amt_word_1.upper() if amt_word_1 else "<span style='color:gray;'>TEN THOUSAND ONLY</span>"
+display_amt_num = f"{int(amt_num):,}/-" if amt_num > 0 else "10,000/- (Sample)"
+display_aw1 = amt_word_1.upper() if amt_word_1 else "TEN THOUSAND ONLY"
 display_aw2 = amt_word_2.upper() if amt_word_2 else ""
 
-# તારીખને 09042026 ફોર્મેટમાં ફેરવો જેથી spacing બરાબર લાગે
 date_str_format = chq_date.strftime('%d%m%Y')
 
-# HTML & CSS
+# 💡 HTML & CSS (આમાં બ્લેન્ક પેજનો પ્રોબ્લેમ સોલ્વ કર્યો છે)
 html_code = f"""
 <style>
 @page {{
@@ -208,21 +211,25 @@ html_code = f"""
     margin: 0mm; 
 }}
 
+html, body {{
+    margin: 0;
+    padding: 0;
+}}
+
 @media print {{
-    body * {{ visibility: hidden; }}
-    #cheque_box, #cheque_box * {{ visibility: visible; }}
+    /* આનાથી પ્રિન્ટ બટન અને ટ્રેકર છુપાઈ જશે, બાકી બધું દેખાશે */
+    #print_button, #coord_box {{ display: none !important; }}
+    
     #cheque_box {{
-        position: absolute;
-        left: 0;
-        top: 0;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
         border: none !important; 
-        background-image: none !important; 
-        margin: 0;
-        padding: 0;
-        width: 100% !important;
-        height: 100% !important;
+        background-image: none !important; /* ફોટો પ્રિન્ટ નહિ થાય */
+        background-color: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
     }}
-    #coord_box, #print_button {{ display: none !important; }}
 }}
 </style>
 
@@ -236,17 +243,17 @@ html_code = f"""
         Dragging...
     </div>
 
-    <div id="drag_date" style="position: absolute; left: {new_d_x}px; top: {preview_h - new_d_y}px; color: blue; font-family: 'Courier New', monospace; font-weight: bold; font-size: {new_fs_d}px; letter-spacing: {new_d_space}px; cursor: grab; user-select: none;">{date_str_format}</div>
+    <div id="drag_date" style="position: absolute; left: {new_d_x}px; top: {preview_h - new_d_y}px; color: black; font-family: 'Courier New', monospace; font-weight: {fw}; font-size: {new_fs_d}px; letter-spacing: {new_d_space}px; cursor: grab; user-select: none;">{date_str_format}</div>
     
-    <div id="drag_payee" style="position: absolute; left: {new_p_x}px; top: {preview_h - new_p_y}px; color: black; font-size: {new_fs_p}px; font-weight: bold; cursor: grab; user-select: none; white-space: nowrap;">{display_payee}</div>
+    <div id="drag_payee" style="position: absolute; left: {new_p_x}px; top: {preview_h - new_p_y}px; color: black; font-size: {new_fs_p}px; font-weight: {fw}; cursor: grab; user-select: none; white-space: nowrap;">{display_payee}</div>
     
-    <div id="drag_amt_num" style="position: absolute; left: {new_an_x}px; top: {preview_h - new_an_y}px; color: black; font-size: {new_fs_an}px; cursor: grab; user-select: none; white-space: nowrap;">{display_amt_num}</div>
+    <div id="drag_amt_num" style="position: absolute; left: {new_an_x}px; top: {preview_h - new_an_y}px; color: black; font-size: {new_fs_an}px; font-weight: {fw}; cursor: grab; user-select: none; white-space: nowrap;">{display_amt_num}</div>
     
-    <div id="drag_amt_word" style="position: absolute; left: {new_aw_x}px; top: {preview_h - new_aw_y}px; color: black; font-size: {new_fs_aw}px; white-space: nowrap; cursor: grab; user-select: none;">{display_aw1}</div>
+    <div id="drag_amt_word" style="position: absolute; left: {new_aw_x}px; top: {preview_h - new_aw_y}px; color: black; font-size: {new_fs_aw}px; font-weight: {fw}; white-space: nowrap; cursor: grab; user-select: none;">{display_aw1}</div>
     
-    <div id="drag_amt_word_2" style="position: absolute; left: {new_aw2_x}px; top: {preview_h - new_aw2_y}px; color: black; font-size: {new_fs_aw}px; white-space: nowrap; cursor: grab; user-select: none;">{display_aw2}</div>
+    <div id="drag_amt_word_2" style="position: absolute; left: {new_aw2_x}px; top: {preview_h - new_aw2_y}px; color: black; font-size: {new_fs_aw}px; font-weight: {fw}; white-space: nowrap; cursor: grab; user-select: none;">{display_aw2}</div>
     
-    <div id="drag_ac" style="position: absolute; left: {new_ac_x}px; top: {preview_h - new_ac_y}px; border-top: 2px solid black; border-bottom: 2px solid black; padding: 2px 5px; font-size: {new_fs_ac}px; font-weight: bold; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg); cursor: grab; user-select: none; white-space: nowrap;">A/C PAYEE</div>
+    <div id="drag_ac" style="position: absolute; left: {new_ac_x}px; top: {preview_h - new_ac_y}px; border-top: 2px solid black; border-bottom: 2px solid black; padding: 2px 5px; font-size: {new_fs_ac}px; font-weight: {fw}; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg); cursor: grab; user-select: none; white-space: nowrap;">A/C PAYEE</div>
 </div>
 
 <script>
