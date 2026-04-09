@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import sqlite3
 import io
@@ -126,21 +127,21 @@ st.divider()
 st.subheader("👀 Print Preview (Real-time)")
 preview_w, preview_h = (600, 250) if new_orient == "Landscape" else (250, 600)
 
-# 💡 Display format for preview (Sample text batavse jo khali hase to)
+# Display format for preview (Sample text batavse jo khali hase to)
 display_payee = final_payee.upper() if final_payee else "SAMPLE PAYEE NAME"
 display_amt_num = f"<b>₹ {int(amt_num)}/-</b>" if amt_num > 0 else "<b style='color:gray;'>₹ 10000/- (Sample)</b>"
 display_amt_word = amt_word if amt_word else "<span style='color:gray;'>Ten Thousand Only (Sample)</span>"
 
-st.markdown(f"""
-<div style="border: 2px dashed #bbb; width: {preview_w}px; height: {preview_h}px; position: relative; background-color: white; margin: auto;">
-    <div style="position: absolute; left: {new_d_x}px; top: {250 - new_d_y if new_orient=='Landscape' else 600 - new_d_y}px; color: blue; font-family: monospace; font-weight: bold;">{chq_date.strftime('%d %m %Y')}</div>
-    
+# HTML code ne iframe ma render karva mate
+html_code = f"""
+<div style="border: 2px dashed #bbb; width: {preview_w}px; height: {preview_h}px; position: relative; background-color: white; margin: auto; overflow: hidden; font-family: sans-serif;">
+    <div style="position: absolute; left: {new_d_x}px; top: {250 - new_d_y if new_orient=='Landscape' else 600 - new_d_y}px; color: blue; font-family: monospace; font-weight: bold; font-size: 16px;">{chq_date.strftime('%d %m %Y')}</div>
     <div style="position: absolute; left: {new_p_x}px; top: {250 - new_p_y if new_orient=='Landscape' else 600 - new_p_y}px; color: black; font-size: 18px; font-weight: bold;">{display_payee}</div>
-    
     <div style="position: absolute; left: {new_an_x}px; top: {250 - new_an_y if new_orient=='Landscape' else 600 - new_an_y}px; color: black; font-size: 16px;">{display_amt_num}</div>
-    
-    <div style="position: absolute; left: {new_aw_x}px; top: {250 - new_aw_y if new_orient=='Landscape' else 600 - new_aw_y}px; color: black; font-size: 14px; width: 350px;">{display_amt_word}</div>
-    
-    <div style="position: absolute; left: 10px; top: 10px; border-bottom: 2px solid black; border-right: 2px solid black; padding: 5px; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg);">A/C PAYEE</div>
+    <div style="position: absolute; left: {new_aw_x}px; top: {250 - new_aw_y if new_orient=='Landscape' else 600 - new_aw_y}px; color: black; font-size: 14px; width: 350px; line-height: 1.2;">{display_amt_word}</div>
+    <div style="position: absolute; left: 10px; top: 10px; border-bottom: 2px solid black; border-right: 2px solid black; padding: 5px; font-size: 14px; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg);">A/C PAYEE</div>
 </div>
-""", unsafe_allow_html=True)
+"""
+
+# components.html no upyog jethi code ni badle proper design aave
+components.html(html_code, height=preview_h + 20)
