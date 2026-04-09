@@ -32,10 +32,11 @@ c.execute('''CREATE TABLE IF NOT EXISTS bank_profiles
              (name TEXT PRIMARY KEY, date_x REAL, date_y REAL, payee_x REAL, payee_y REAL, 
               amt_num_x REAL, amt_num_y REAL, amt_word_x REAL, amt_word_y REAL, orientation TEXT)''')
 
-# 💡 NAVU: Juna database ma navi columns add karva mate (Error aave to ignore karshe)
+# Juna database ma navi columns add karva mate (Error aave to ignore karshe)
 new_columns = [
     ("f_family", "TEXT", "'Arial'"), ("f_size_d", "INTEGER", "16"), 
-    ("f_size_p", "INTEGER", "18"), ("f_size_an", "INTEGER", "16"), ("f_size_aw", "INTEGER", "14")
+    ("f_size_p", "INTEGER", "18"), ("f_size_an", "INTEGER", "16"), ("f_size_aw", "INTEGER", "14"),
+    ("ac_x", "INTEGER", "10"), ("ac_y", "INTEGER", "210") # A/C Payee Coordinates
 ]
 for col_name, col_type, default_val in new_columns:
     try:
@@ -59,23 +60,27 @@ selected_profile = st.sidebar.selectbox("Bank Profile Select Karo", ["Navi Profi
 # Default Values 
 p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient = ("", 450, 210, 70, 170, 480, 135, 70, 140, "Landscape")
 f_fam, fs_d, fs_p, fs_an, fs_aw = ("Arial", 16, 18, 16, 14)
+ac_x, ac_y = (10, 210)
 
 if selected_profile == "Navi Profile Banavo":
     new_profile_name = st.sidebar.text_input("Bank nu Naam (e.g. HDFC_Current)")
     if st.sidebar.button("Profile Create Karo"):
         if new_profile_name:
             c.execute('''INSERT OR IGNORE INTO bank_profiles 
-                         (name, date_x, date_y, payee_x, payee_y, amt_num_x, amt_num_y, amt_word_x, amt_word_y, orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
-                      (new_profile_name, 450, 210, 70, 170, 480, 135, 70, 140, "Landscape", "Arial", 16, 18, 16, 14))
+                         (name, date_x, date_y, payee_x, payee_y, amt_num_x, amt_num_y, amt_word_x, amt_word_y, orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', 
+                      (new_profile_name, 450, 210, 70, 170, 480, 135, 70, 140, "Landscape", "Arial", 16, 18, 16, 14, 10, 210))
             conn.commit()
             st.success(f"{new_profile_name} Profile Bani Gai! Have Dropdown mathi select karo.")
             st.rerun()
 else:
-    # Database mathi existing profile no data levu
-    data = c.execute('SELECT * FROM bank_profiles WHERE name=?', (selected_profile,)).fetchone()
+    # Database mathi existing profile no data levu (Explicit columns to avoid tuple unpack error)
+    data = c.execute('''SELECT name, date_x, date_y, payee_x, payee_y, 
+                               amt_num_x, amt_num_y, amt_word_x, amt_word_y, 
+                               orientation, f_family, f_size_d, f_size_p, f_size_an, f_size_aw, ac_x, ac_y 
+                        FROM bank_profiles WHERE name=?''', (selected_profile,)).fetchone()
     if data:
-        p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient, f_fam, fs_d, fs_p, fs_an, fs_aw = data
+        p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient, f_fam, fs_d, fs_p, fs_an, fs_aw, ac_x, ac_y = data
 
 # --- MAIN UI: DATA ENTRY ---
 col1, col2 = st.columns([1, 1.2])
@@ -91,7 +96,7 @@ with col1:
     auto_word = number_to_words(amt_num) if amt_num > 0 else ""
     amt_word = st.text_input("Amount (In Words)", value=auto_word)
     chq_date = st.date_input("Date", datetime.now())
-    is_ac_payee = st.checkbox("A/c Payee (Cross Cheque)")
+    is_ac_payee = st.checkbox("A/c Payee (Cross Cheque)", value=True) # Default checked rakhel che
     
     if st.button("🖨️ Save & Print"):
         if final_payee and amt_num > 0:
@@ -106,17 +111,15 @@ with col2:
     st.subheader("⚙️ Visual & Font Adjustment")
     
     # --- FONT SETTINGS ---
-    st.markdown("**Font Style & Size Settings:**")
-    font_options = ["Arial", "Verdana", "Times New Roman", "Courier New", "Georgia", "Tahoma"]
-    new_f_fam = st.selectbox("Font Type", font_options, index=font_options.index(f_fam) if f_fam in font_options else 0)
-    
-    c1, c2, c3, c4 = st.columns(4)
-    new_fs_d = c1.number_input("Date Size", min_value=8, max_value=40, value=fs_d)
-    new_fs_p = c2.number_input("Payee Size", min_value=8, max_value=40, value=fs_p)
-    new_fs_an = c3.number_input("Num Size", min_value=8, max_value=40, value=fs_an)
-    new_fs_aw = c4.number_input("Word Size", min_value=8, max_value=40, value=fs_aw)
-    
-    st.markdown("---")
+    with st.expander("📝 Font Style & Size Settings"):
+        font_options = ["Arial", "Verdana", "Times New Roman", "Courier New", "Georgia", "Tahoma"]
+        new_f_fam = st.selectbox("Font Type", font_options, index=font_options.index(f_fam) if f_fam in font_options else 0)
+        
+        c1, c2, c3, c4 = st.columns(4)
+        new_fs_d = c1.number_input("Date Size", min_value=8, max_value=40, value=fs_d)
+        new_fs_p = c2.number_input("Payee Size", min_value=8, max_value=40, value=fs_p)
+        new_fs_an = c3.number_input("Num Size", min_value=8, max_value=40, value=fs_an)
+        new_fs_aw = c4.number_input("Word Size", min_value=8, max_value=40, value=fs_aw)
     
     # --- MARGIN SETTINGS ---
     c5, c6 = st.columns(2)
@@ -125,11 +128,13 @@ with col2:
         new_p_x = st.slider("Payee Name X", 0, 600, int(p_x))
         new_an_x = st.slider("Amount Number X", 0, 600, int(an_x))
         new_aw_x = st.slider("Amount Word X", 0, 600, int(aw_x))
+        new_ac_x = st.slider("A/C Payee X", 0, 600, int(ac_x))
     with c6:
         new_d_y = st.slider("Date Y", 0, 250, int(d_y))
         new_p_y = st.slider("Payee Name Y", 0, 250, int(p_y))
         new_an_y = st.slider("Amount Number Y", 0, 250, int(an_y))
         new_aw_y = st.slider("Amount Word Y", 0, 250, int(aw_y))
+        new_ac_y = st.slider("A/C Payee Y", 0, 250, int(ac_y))
         
     new_orient = st.radio("Orientation", ["Landscape", "Portrait"], index=0 if orient=="Landscape" else 1, horizontal=True)
 
@@ -138,17 +143,17 @@ with col2:
             c.execute('''UPDATE bank_profiles 
                          SET date_x=?, date_y=?, payee_x=?, payee_y=?, 
                              amt_num_x=?, amt_num_y=?, amt_word_x=?, amt_word_y=?, orientation=?,
-                             f_family=?, f_size_d=?, f_size_p=?, f_size_an=?, f_size_aw=?
+                             f_family=?, f_size_d=?, f_size_p=?, f_size_an=?, f_size_aw=?, ac_x=?, ac_y=?
                          WHERE name=?''', 
                       (new_d_x, new_d_y, new_p_x, new_p_y, new_an_x, new_an_y, new_aw_x, new_aw_y, new_orient, 
-                       new_f_fam, new_fs_d, new_fs_p, new_fs_an, new_fs_aw, selected_profile))
+                       new_f_fam, new_fs_d, new_fs_p, new_fs_an, new_fs_aw, new_ac_x, new_ac_y, selected_profile))
             conn.commit()
             st.toast("Settings Saved! ✅")
 
 # --- VISUAL PREVIEW BOX ---
 st.divider()
 st.subheader("👀 Print Preview (Drag & Drop)")
-st.info("💡 **TIPS:** Tame preview ma text ne drag kari shaksho. Drag karya pachi upar khuna ma nava number aavse, ae number tame upar slider ma nakhine save kari sako cho.")
+st.info("💡 **TIPS:** Tame preview ma A/C Payee sahit badhu j drag kari shaksho. Drag karya pachi upar khuna ma nava number aavse, ae number tame upar slider ma nakhine save kari sako cho.")
 
 preview_w, preview_h = (600, 250) if new_orient == "Landscape" else (250, 600)
 
@@ -156,7 +161,7 @@ display_payee = final_payee.upper() if final_payee else "SAMPLE PAYEE NAME"
 display_amt_num = f"<b>₹ {int(amt_num)}/-</b>" if amt_num > 0 else "<b style='color:gray;'>₹ 10000/- (Sample)</b>"
 display_amt_word = amt_word if amt_word else "<span style='color:gray;'>Ten Thousand Only (Sample)</span>"
 
-# HTML code ma Drag & Drop Javascript add karyo che
+# HTML code ma Drag & Drop Javascript add karyo che (A/C Payee included)
 html_code = f"""
 <div id="cheque_box" style="border: 2px dashed #bbb; width: {preview_w}px; height: {preview_h}px; position: relative; background-color: white; margin: auto; overflow: hidden; font-family: '{new_f_fam}', sans-serif;">
     
@@ -172,12 +177,14 @@ html_code = f"""
     
     <div id="drag_amt_word" style="position: absolute; left: {new_aw_x}px; top: {250 - new_aw_y if new_orient=='Landscape' else 600 - new_aw_y}px; color: black; font-size: {new_fs_aw}px; width: 350px; line-height: 1.2; cursor: grab; user-select: none;">{display_amt_word}</div>
     
-    <div style="position: absolute; left: 10px; top: 10px; border-bottom: 2px solid black; border-right: 2px solid black; padding: 5px; font-size: 14px; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg);">A/C PAYEE</div>
+    <div id="drag_ac" style="position: absolute; left: {new_ac_x}px; top: {250 - new_ac_y if new_orient=='Landscape' else 600 - new_ac_y}px; border-top: 2px solid black; border-bottom: 2px solid black; padding: 2px 5px; font-size: 14px; font-weight: bold; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg); cursor: grab; user-select: none; white-space: nowrap;">A/C PAYEE</div>
 </div>
 
 <script>
 function makeDraggable(elementId, labelName) {{
     var elmnt = document.getElementById(elementId);
+    if (!elmnt) return; // Jo element hide hoy to error na aave
+    
     var coordBox = document.getElementById("coord_box");
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     var containerHeight = {preview_h};
@@ -224,6 +231,7 @@ makeDraggable("drag_date", "Date");
 makeDraggable("drag_payee", "Payee Name");
 makeDraggable("drag_amt_num", "Amount Number");
 makeDraggable("drag_amt_word", "Amount Word");
+makeDraggable("drag_ac", "A/C Payee"); // A/C Payee ne drag mate active karyu
 </script>
 """
 
