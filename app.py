@@ -17,9 +17,9 @@ def number_to_words(n):
         elif num < 20: return words[num] + " "
         elif num < 100: return words[num // 10 * 10] + " " + get_words(num % 10)
         elif num < 1000: return words[num // 100] + " Hundred " + get_words(num % 100)
-        elif num < 100000: return get_words(num // 1000) + "Thousand " + get_words(num % 1000)
-        elif num < 10000000: return get_words(num // 100000) + "Lakh " + get_words(num % 100000)
-        else: return get_words(num // 10000000) + "Crore " + get_words(num % 10000000)
+        elif num < 100000: return get_words(num // 1000) + " Thousand " + get_words(num % 1000)
+        elif num < 10000000: return get_words(num // 100000) + " Lakh " + get_words(num % 100000)
+        else: return get_words(num // 10000000) + " Crore " + get_words(num % 10000000)
         
     return get_words(int(n)).strip() + " Only"
 
@@ -44,7 +44,7 @@ st.sidebar.header("🏦 Bank Profile Settings")
 profiles = [row[0] for row in c.execute('SELECT name FROM bank_profiles').fetchall()]
 selected_profile = st.sidebar.selectbox("Bank Profile Select Karo", ["Navi Profile Banavo"] + profiles)
 
-# Default Values (Jo navi profile hoy to aa vapraase)
+# Default Values 
 p_name, d_x, d_y, p_x, p_y, an_x, an_y, aw_x, aw_y, orient = ("", 450, 210, 70, 170, 480, 135, 70, 140, "Landscape")
 
 if selected_profile == "Navi Profile Banavo":
@@ -126,18 +126,20 @@ st.divider()
 st.subheader("👀 Print Preview (Real-time)")
 preview_w, preview_h = (600, 250) if new_orient == "Landscape" else (250, 600)
 
-# Display format for amount number
-display_amt_num = f"**₹ {int(amt_num)}/-**" if amt_num > 0 else ""
+# 💡 Display format for preview (Sample text batavse jo khali hase to)
+display_payee = final_payee.upper() if final_payee else "SAMPLE PAYEE NAME"
+display_amt_num = f"<b>₹ {int(amt_num)}/-</b>" if amt_num > 0 else "<b style='color:gray;'>₹ 10000/- (Sample)</b>"
+display_amt_word = amt_word if amt_word else "<span style='color:gray;'>Ten Thousand Only (Sample)</span>"
 
 st.markdown(f"""
 <div style="border: 2px dashed #bbb; width: {preview_w}px; height: {preview_h}px; position: relative; background-color: white; margin: auto;">
     <div style="position: absolute; left: {new_d_x}px; top: {250 - new_d_y if new_orient=='Landscape' else 600 - new_d_y}px; color: blue; font-family: monospace; font-weight: bold;">{chq_date.strftime('%d %m %Y')}</div>
     
-    <div style="position: absolute; left: {new_p_x}px; top: {250 - new_p_y if new_orient=='Landscape' else 600 - new_p_y}px; color: black; font-size: 18px; font-weight: bold;">{final_payee.upper()}</div>
+    <div style="position: absolute; left: {new_p_x}px; top: {250 - new_p_y if new_orient=='Landscape' else 600 - new_p_y}px; color: black; font-size: 18px; font-weight: bold;">{display_payee}</div>
     
     <div style="position: absolute; left: {new_an_x}px; top: {250 - new_an_y if new_orient=='Landscape' else 600 - new_an_y}px; color: black; font-size: 16px;">{display_amt_num}</div>
     
-    <div style="position: absolute; left: {new_aw_x}px; top: {250 - new_aw_y if new_orient=='Landscape' else 600 - new_aw_y}px; color: black; font-size: 14px; width: 350px;">{amt_word}</div>
+    <div style="position: absolute; left: {new_aw_x}px; top: {250 - new_aw_y if new_orient=='Landscape' else 600 - new_aw_y}px; color: black; font-size: 14px; width: 350px;">{display_amt_word}</div>
     
     <div style="position: absolute; left: 10px; top: 10px; border-bottom: 2px solid black; border-right: 2px solid black; padding: 5px; display: {'block' if is_ac_payee else 'none'}; transform: rotate(-45deg);">A/C PAYEE</div>
 </div>
