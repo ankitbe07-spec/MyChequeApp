@@ -156,25 +156,32 @@ display_payee = final_payee.upper() if final_payee else "SAMPLE PAYEE NAME"
 display_amt_num = f"<b>₹ {int(amt_num)}/-</b>" if amt_num > 0 else "<b style='color:gray;'>₹ 10000/- (Sample)</b>"
 display_amt_word = amt_word if amt_word else "<span style='color:gray;'>Ten Thousand Only (Sample)</span>"
 
-# HTML code ma Print CSS ane Print Button add karyu che
+# HTML code ma Date, Time ane Title gayab karva mate "@page { margin: 0; }" add karyu che
 html_code = f"""
 <style>
-/* Jyare print aapiye tyare shu dekhavu joiye enu setting */
+/* 💡 Aa nava code thi browser na Date, Time ane URL automatically gayab thai jase */
+@page {{
+    size: auto;
+    margin: 0mm; 
+}}
+
 @media print {{
     body * {{
-        visibility: hidden; /* Badhu gayab kari do */
+        visibility: hidden; 
     }}
     #cheque_box, #cheque_box * {{
-        visibility: visible; /* Khali cheque na elements dekhase */
+        visibility: visible; 
     }}
     #cheque_box {{
         position: absolute;
         left: 0;
         top: 0;
-        border: none !important; /* Tuteli line print ma nahi aave */
+        border: none !important; 
+        margin: 0;
+        padding: 0;
     }}
     #coord_box, #print_button {{
-        display: none !important; /* Print vakhate tracker ane print button hide karo */
+        display: none !important; 
     }}
 }}
 </style>
